@@ -27,7 +27,7 @@ void parseInputString(String inputString)
   inputTopic = inputString.substring(inputString.indexOf("<topic>") + 7, inputString.indexOf("</topic>"));
   inputPayload = inputString.substring(inputString.indexOf("<payload>") + 9, inputString.indexOf("</payload>"));
 }
-boolean readSerial()
+boolean dataOnSerial()
 {
   inputTopic = "";
   inputPayload = "";

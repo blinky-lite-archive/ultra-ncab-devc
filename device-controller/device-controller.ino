@@ -1,18 +1,37 @@
 #include "device-controller.h"
-int loopDelaymS = 100;
+
+int loopCount = 0;
+int loopCountMax = 1000;
+float deltaMicros = 0;
+unsigned long nowTime;
+unsigned long loopStartTime;
+
 
 void setup()
 {
   setupCommunications(true, 115200);
   delay(200);
+  nowTime = micros();
+  loopStartTime = nowTime;
 }
 
 void loop()
 {
-  if (readSerial())
+  if (dataOnSerial())
   {
-    printMessage(getInputTopic(), getInputPayload());
+    
+    if (getInputTopic().equals("getLoopTime"))
+    {
+      printMessage("loopTime", floatToString(deltaMicros,2));
+    }
   }
-  delay(loopDelaymS);
+  ++loopCount;
+  if (loopCount > loopCountMax)
+  {
+      nowTime = micros();
+      deltaMicros = (float)(nowTime - loopStartTime) / ((float) loopCountMax);
+      loopCount = 0;
+      loopStartTime = nowTime;
+  }
 }
 
