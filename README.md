@@ -1,1 +1,1 @@
-# teensy-pi-device-message-adapter
+# teensy-pi-device-controller
