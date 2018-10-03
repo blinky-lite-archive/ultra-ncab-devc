@@ -11,6 +11,7 @@ void setup()
 {
   setupCommunications(true, 115200);
   delay(200);
+  
   nowTime = micros();
   loopStartTime = nowTime;
 }
@@ -19,7 +20,6 @@ void loop()
 {
   if (dataOnSerial())
   {
-    
     if (getInputTopic().equals("getLoopTime"))
     {
       printMessage("loopTime", floatToString(deltaMicros,2));
