@@ -7,10 +7,13 @@ unsigned long nowTime;
 unsigned long loopStartTime;
 unsigned long startTime1Hz;
 boolean blinky = false;
+int led13Pin = 13;
+boolean led13 = false;
 
 void setup()
 {
-  setupCommunications(true, 9600);
+  setupCommunications(false, 9600);
+  pinMode(led13Pin, OUTPUT);     
 //  Serial.begin(9600);
    
   nowTime = micros();
@@ -40,6 +43,8 @@ void loop()
   {
     startTime1Hz = nowTime;
     blinky = !blinky;
+    led13 = !led13;
+    digitalWrite(led13Pin, led13);
     printMessage("loopTime", floatToString(deltaMicros,2));
     printMessage("blinky", booleanToString(blinky));
   }

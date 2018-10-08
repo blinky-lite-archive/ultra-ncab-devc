@@ -38,7 +38,7 @@ boolean dataOnSerial()
     while(Serial1.available() > 0)
     {
       char lastRecvd = Serial1.read();
-      if (lastRecvd == '!')
+      if (lastRecvd == '\n')
       {
         inputString = String((char*) inputBuff);
         buffPointer = 0;
@@ -60,7 +60,7 @@ boolean dataOnSerial()
     while(Serial.available() > 0)
     {
       char lastRecvd = Serial.read();
-      if (lastRecvd == '!')
+      if (lastRecvd == '\n')
       {
         inputString = String((char*) inputBuff);
         buffPointer = 0;
@@ -80,7 +80,7 @@ boolean dataOnSerial()
 }
 void printMessage(String topic, String payload)
 {
-  printStringToSerial("<topic>" + topic + "</topic><payload>" + payload + "</payload>!");
+  printStringToSerial("<topic>" + topic + "</topic><payload>" + payload + "</payload>\n");
 }
 int stringToInt(String inputString)
 {
