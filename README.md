@@ -1,1 +1,1 @@
-# teensy-pi-device-controller
+# chill-detector-device-controller
