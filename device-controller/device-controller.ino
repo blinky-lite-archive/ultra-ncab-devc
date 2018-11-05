@@ -1,6 +1,6 @@
 #include <ADC.h>
 #define PWMINBUFMAX 5
-#define FFTPTS 256
+#define FFTPTS 512
 const int pwmOutPin = 38;
 const int pwmInPin = 37;
 const int counterPin = 36;
@@ -27,7 +27,8 @@ boolean counterPinValue = false;
 int counter = 0;
 int maxCounter = 10;
 unsigned long deltaT;
-unsigned long sampleInterval = 7000;
+unsigned long sampleInterval = 3912;
+unsigned long dataStartTime = 0;
 String outputData;
 
 int pwmInBuf[PWMINBUFMAX];
@@ -65,7 +66,7 @@ void setup()
 
 void loop() 
 {
-//  delayMicroseconds(1);
+  if (ifftCounter < 1) dataStartTime = micros();
   detPinValue = (float) adc->analogReadContinuous(ADC_0);
   avgDetPinValue = avgDetPinValue + (detPinValue - avgDetPinValue) / nsamples;
 
@@ -94,7 +95,8 @@ void loop()
   }
   if (ifftCounter == FFTPTS)
   {
-    outputData = "*," + floatToString(nsamples * 2.0, 2);
+    deltaT = micros() - dataStartTime;
+    outputData = "*," + String((int) deltaT);
     Serial1.println(outputData);
     for (int ii = 0; ii < FFTPTS; ++ii) 
     {
