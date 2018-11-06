@@ -5,6 +5,7 @@ const int pwmOutPin = 38;
 const int pwmInPin = 37;
 const int counterPin = 36;
 const int detPin = A0; // ADC0
+const int ledPin = 13;
 
 int pwMValue = 2048;
 int pwmFrequency = 40250;
@@ -22,6 +23,7 @@ float overlapI[FFTPTS];
 float overlapQ[FFTPTS];
 int ifftCounter = 0;
 float isample = 0.0;
+boolean ledPinValue = false;
 
 boolean counterPinValue = false;
 int counter = 0;
@@ -50,6 +52,8 @@ void setup()
   pinMode(pwmOutPin, OUTPUT);  
   pinMode(pwmInPin, INPUT);  
   pinMode(counterPin, OUTPUT);  
+  pinMode(ledPin, OUTPUT);  
+  digitalWrite(ledPin, ledPinValue);
 
 
   analogWrite(pwmOutPin, pwMValue);
@@ -105,6 +109,9 @@ void loop()
       overlapI[ii] = 0;
       overlapQ[ii] = 0;
     }
+    ledPinValue = !ledPinValue;
+    digitalWrite(ledPin, ledPinValue);
+
     ifftCounter = 0;
     lastWriteTime = micros();
     
