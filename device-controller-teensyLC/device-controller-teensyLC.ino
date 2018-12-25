@@ -16,7 +16,7 @@ const int inQPin = A1;
 int pwmValue = 128;
 int pwmFrequency = 80910;
 int pwmResolution = 8;
-boolean ledPinValue = true;
+boolean ledPinValue = false;
 volatile boolean pwmIValue = false;
 volatile boolean pwmQValue = false;
 float inIValue;
@@ -60,7 +60,7 @@ void setup()
   attachInterrupt(pwmRisePin, pwmRisePinHandler, RISING);
   attachInterrupt(pwmFallPin, pwmFallPinHandler, FALLING);
   analogWrite(pwmPin, pwmValue);
-
+ 
   ifftCounterI = 0;
   ifftCounterQ = FFTPTS;
   lastWriteTime = micros();
