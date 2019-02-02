@@ -1,2 +1,2 @@
-# vibration-spectrum-detector device-controller
+# chill-detector device-controller
 
