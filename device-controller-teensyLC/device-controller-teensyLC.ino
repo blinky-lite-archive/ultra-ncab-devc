@@ -1,6 +1,6 @@
-#define FFTPTS 512
-#define FFTPTS2 1024
-#define FFTPTS8 4096
+#define FFTPTS 128
+#define FFTPTS2 256
+#define FFTPTS8 1024
 #define SAMPLEINTERVAL 2000
 
 const int pwmPin = 9;
