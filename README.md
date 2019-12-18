@@ -1,2 +1,2 @@
-# chill-detector device-controller
+# ultra-ncab device-controller
 
