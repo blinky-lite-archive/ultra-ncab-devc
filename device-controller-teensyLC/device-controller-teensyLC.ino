@@ -1,17 +1,19 @@
-#define FFTPTS 128
-#define FFTPTS2 256
-#define FFTPTS8 1024
-#define SAMPLEINTERVAL 2000
+#define FFTPTS 512
+#define FFTPTS2 1024
+#define WRITEBUFFSIZ 5008
+#define BAUDRATE 115200
 
-const int pwmPin = 9;
-const int pwmRisePin = 8;
+const int pwmPin = 6;
+const int pwmRisePin = 5;
 const int pwmFallPin = 7;
 const int transPin = 23;
-const int pwmIPin = 6;
-const int pwmQPin = 5;
+const int pwmIPin = 4;
+const int pwmQPin = 3;
 const int ledPin = 13;
+const int blueLedPin = 2;
 const int inIPin = A0;
 const int inQPin = A1;
+const int ampPin = A3;
 
 int pwmValue = 128;
 int pwmFrequency = 80000;
@@ -24,25 +26,40 @@ float inQValue;
 
 int ifftCounterI = 0;
 int ifftCounterQ = FFTPTS;
-unsigned long lastWriteTime = 0;
-unsigned long nowTime;
-boolean readyToReceiveFlag = false;
-unsigned long deltaT;
-unsigned long dataStartTime = 0;
+boolean readyToReceiveFlag = true;
+unsigned long  nowTime;
+unsigned long  lastWriteTime = 0;
+unsigned long timeCounter = 0;
+float sampleCounter = 0.0;
+float ampCounter = 0.0;
 
-typedef union
+struct Readings
 {
-  float number[FFTPTS2];
-  uint8_t bytes[FFTPTS8];
-} FLOATUNION_t;
-FLOATUNION_t overlap;
+ float number[FFTPTS2];
+ int ultraAmp;
+ int freqOffset;
+ int sampleInterval;
+};
+Readings readings;
 
+struct Settings
+{
+  int freqOffset;
+  int sampleInterval;
+};
+Settings settings;
 
 void setup()
 {
+  readyToReceiveFlag = false;
+  readings.freqOffset = 0;
+  readings.sampleInterval = 8000;
+
+  
   analogWriteResolution(pwmResolution);
-  analogWriteFrequency(pwmPin, pwmFrequency);
+  analogWriteFrequency(pwmPin, pwmFrequency + readings.freqOffset);
   pinMode(ledPin, OUTPUT);
+  pinMode(blueLedPin, OUTPUT);
   pinMode(pwmPin, OUTPUT);
   pinMode(transPin, OUTPUT);
   pinMode(pwmIPin, OUTPUT);
@@ -52,26 +69,30 @@ void setup()
   pinMode(pwmFallPin, INPUT);
   pinMode(inIPin, INPUT);
   pinMode(inQPin, INPUT);
+  pinMode(ampPin, INPUT);
   digitalWrite(ledPin, ledPinValue);
   digitalWrite(transPin, pwmIValue);
   digitalWrite(pwmIPin, pwmIValue);
   digitalWrite(pwmQPin, pwmQValue);
   digitalWrite(ledPin, ledPinValue);
+  digitalWrite(blueLedPin, ledPinValue);
   attachInterrupt(pwmRisePin, pwmRisePinHandler, RISING);
   attachInterrupt(pwmFallPin, pwmFallPinHandler, FALLING);
   analogWrite(pwmPin, pwmValue);
 
+  analogReadResolution(12);
+
   ifftCounterI = 0;
   ifftCounterQ = FFTPTS;
-  lastWriteTime = micros();
-
+  readings.ultraAmp = 0;
+  ampCounter = 0.0;
+ 
   for (int ii = 0; ii < FFTPTS2; ++ii)
   {
-    overlap.number[ii] = 0.0;
+    readings.number[ii] = 0.0;
   }
 
-  Serial1.begin(115200);
-  //  Serial.begin(9600);
+  Serial1.begin(BAUDRATE);
 
 }
 
@@ -79,50 +100,69 @@ void loop()
 {
   if (readyToReceiveFlag)
   {
-    if (ifftCounterI < 1) dataStartTime = micros();
-    overlap.number[ifftCounterI] = (float) analogRead(inIPin);
-    overlap.number[ifftCounterQ] = (float) analogRead(inQPin);
+    readings.number[ifftCounterI] = readings.number[ifftCounterI] + (float) analogRead(inIPin);
+    readings.number[ifftCounterQ] = readings.number[ifftCounterQ] + (float) analogRead(inQPin);
+    sampleCounter = sampleCounter + 1.0;
+
+    readings.ultraAmp = readings.ultraAmp + (float) analogRead(ampPin);
+    ampCounter = ampCounter + 1.0;
+
 
     nowTime = micros();
-    if ((nowTime - lastWriteTime) > SAMPLEINTERVAL)
+  
+    if ((nowTime - lastWriteTime) > timeCounter )
     {
-      lastWriteTime = nowTime;
+      readings.number[ifftCounterI] = readings.number[ifftCounterI] / sampleCounter;
+      readings.number[ifftCounterQ] = readings.number[ifftCounterQ] / sampleCounter;
       ++ifftCounterI;
       ++ifftCounterQ;
+      timeCounter = timeCounter + (unsigned long) (readings.sampleInterval);
+      sampleCounter = 0.0;;
+
     }
     if (ifftCounterI == FFTPTS)
     {
-      deltaT = micros() - dataStartTime;
 
-      //      Serial.print(overlap.number[0]);
-      //      Serial.print(" ");
-      //      Serial.println(overlap.number[FFTPTS]);
+      readings.ultraAmp = readings.ultraAmp / ampCounter;
 
-      Serial1.write(overlap.bytes, FFTPTS8);
+      Serial1.write((uint8_t*)&readings, WRITEBUFFSIZ);
+ 
       readyToReceiveFlag = false;
-
 
       for (int ii = 0; ii < FFTPTS; ++ii)
       {
-        overlap.number[ii] = 0;
-        overlap.number[ii + FFTPTS] = 0;
+        readings.number[ii] = 0;
+        readings.number[ii + FFTPTS] = 0;
       }
       ledPinValue = !ledPinValue;
       digitalWrite(ledPin, ledPinValue);
+      digitalWrite(blueLedPin, ledPinValue);
+      
 
       ifftCounterI = 0;
       ifftCounterQ = FFTPTS;
-      lastWriteTime = micros();
+      readings.ultraAmp = 0;
+      ampCounter = 0.0;
     }
   }
-  while (Serial1.available() > 0)
+  if (!readyToReceiveFlag)
   {
-    char lastRecvd = Serial1.read();
-    if (lastRecvd == '1')
+    while (Serial1.available() > 0)
     {
+      Serial1.readBytes((uint8_t*) &settings, 8);
+      
+      readings.sampleInterval = settings.sampleInterval;
+      if (readings.freqOffset != settings.freqOffset)
+      {
+        analogWriteFrequency(pwmPin, pwmFrequency + settings.freqOffset);
+      }
+      readings.freqOffset = settings.freqOffset;
       readyToReceiveFlag = true;
+      lastWriteTime = micros();
+      timeCounter = (unsigned long) (readings.sampleInterval);
+      sampleCounter = 0.0;
     }
-  }
+  } 
 }
 void pwmRisePinHandler()
 {
